@@ -8,14 +8,15 @@ Python Packages Necessary:
 - time
 - os
 - numpy
-- cv2
-- zaber_motion (Units, Library)
+- cv2 https://pypi.org/project/opencv-python/
+- pypylon (pylon, genicam) https://github.com/basler/pypylon
+- zaber_motion (Units, Library) https://www.zaber.com/software/docs/motion-library/ascii/tutorials/install/py/
 - zaber_motion.ascii (Connection)
-- baslerwrappers (BaslerCamera)
 
 Files Required:
 - FOV change.py
 - Autofocus.py
+- baslerwrappers.py
 - camera configuration file (saved via pylon viewer)
 
 General Instructions:
