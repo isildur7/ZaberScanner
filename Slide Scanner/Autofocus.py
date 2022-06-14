@@ -5,6 +5,13 @@ Created on Mon Aug 23 16:59:55 2021
 @author: amey chaware
 jerry jiang
 
+TODO:
+- search method: fibonacci/trener?/brenner parabola
+- take multiple strips/checkerboard pattern into the FOM function
+- change FOV and see how the FOM graph change and where the program focuses
+- see FOM on different color chanel
+- convert byte streams into jpeg?
+
 """
 
 import time
@@ -16,11 +23,13 @@ import numpy as np
 import serial
 import os
 
+
 # FOMs and calculation of FOM at the given position
 def laplacian(img):
     img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
     img_sobel = cv2.Laplacian(img_gray,cv2.CV_16U)
     return cv2.mean(img_sobel)[0]
+
 
 def energy_laplacian(img):
     img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
@@ -32,27 +41,55 @@ def energy_laplacian(img):
     #print(np.shape(img_sobel))
     return np.mean(np.square(img_sobel))
 
-def brenner(img):
-    img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    #print(np.shape(img_gray))
-    kernel = np.array([-1, 0, 1])
-    img_sobel = cv2.filter2D(img_gray, cv2.CV_16U, kernel)
-    #print(np.shape(img_sobel))
-    return np.sum(np.square(img_sobel))
 
-def normed_variance(img):
-    img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    #mean, std = cv2.meanStdDev(img_gray)
-    #mean, std = np.squeeze(mean), np.squeeze(std)
-    return np.var(img_gray)/np.mean(img_gray)
-    #return std*std/mean
-    
-def calculation(camera, conv, fom, position, axis):
-    axis.move_absolute(position, Units.LENGTH_MILLIMETRES)
-    image = camera.take_one_opencv_image(conv)
-    actual_postition = axis.get_position(Units.LENGTH_MILLIMETRES)
-    fom_here = fom(image)
-    return actual_postition, fom_here
+def brenner(img, striped_focus = False):
+    if not(striped_focus):
+        img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+        #print(np.shape(img_gray))
+        kernel = np.array([-1, 0, 1])
+        img_sobel = cv2.filter2D(img_gray, cv2.CV_16U, kernel)
+        #print(np.shape(img_sobel))
+        return np.sum(np.square(img_sobel))
+    if striped_focus:
+        output = 0
+        for img_element in img:
+            output += brenner(img_element)
+        return output
+
+
+def normed_variance(img, striped_focus = False):
+    if not(striped_focus):
+        img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+        #mean, std = cv2.meanStdDev(img_gray)
+        #mean, std = np.squeeze(mean), np.squeeze(std)
+        return np.var(img_gray)/np.mean(img_gray)
+        #return std*std/mean
+    if striped_focus:
+        output = 0
+        for img_element in img:
+            output += normed_variance(img_element)
+        return output    
+
+
+def calculation(camera, conv, fom, position, axis, striped_focus = False):
+    if not(striped_focus):
+        axis.move_absolute(position, Units.LENGTH_MILLIMETRES)
+        image = camera.take_one_opencv_image(conv)
+        actual_postition = axis.get_position(Units.LENGTH_MILLIMETRES)
+        fom_here = fom(image, striped_focus)
+        return actual_postition, fom_here
+    if striped_focus:
+        axis.move_absolute(position, Units.LENGTH_MILLIMETRES)
+        imageList = []
+        for i in range(5):
+            x_size = int(3840//10)
+            y_size = 2160
+            camera.change_ROI((x_size, y_size), (int(x_size * 2 * i), 0))
+            image = camera.take_one_opencv_image(conv)
+            imageList.append(image)
+        actual_postition = axis.get_position(Units.LENGTH_MILLIMETRES)
+        fom_here = fom(imageList, striped_focus)
+        return actual_postition, fom_here    
 
 # Helpers for Fibonacci AF
 def step_to_absolute(steps):
@@ -120,8 +157,8 @@ def Autofocus(start, end, delta, camera, converter, axis, fom):
         picturePos1 = start + (scale*(end-start))
         picturePos2 = end - (scale*(end-start))
         
-        picturePos1, fomAt1 = calculation(camera, converter, fom, picturePos1, axis)
-        picturePos2, fomAt2 = calculation(camera, converter, fom, picturePos2, axis)
+        picturePos1, fomAt1 = calculation(camera, converter, fom, picturePos1, axis, striped_focus= True)
+        picturePos2, fomAt2 = calculation(camera, converter, fom, picturePos2, axis, striped_focus= True)
         
         if fomAt1 < fomAt2:
             start = picturePos1

@@ -5,7 +5,7 @@ Created on Mon Aug 30 21:06:03 2021
 @author: amey chaware
 """
 import time
-from Autofocus import normed_variance, Autofocus
+from Autofocus import normed_variance, calculation
 from baslerwrappers import BaslerCamera
 from zaber_motion import Units, Library
 from zaber_motion.ascii import Connection
@@ -14,42 +14,42 @@ import cv2
 import numpy as np
 import serial
 
-def laplacian(img):
-    img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    img_sobel = cv2.Laplacian(img_gray,cv2.CV_16U)
-    return cv2.mean(img_sobel)[0]
+# def laplacian(img):
+#     img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+#     img_sobel = cv2.Laplacian(img_gray,cv2.CV_16U)
+#     return cv2.mean(img_sobel)[0]
 
-def calculation(camera, conv, fom, position, axis):
-    axis.move_absolute(position, Units.LENGTH_MILLIMETRES)
-    image = camera.take_one_opencv_image(conv)
-    actual_postition = axis.get_position(Units.LENGTH_MILLIMETRES)
-    fom_here = fom(image)
-    return actual_postition, fom_here
+# def calculation(camera, conv, fom, position, axis):
+#     axis.move_absolute(position, Units.LENGTH_MILLIMETRES)
+#     image = camera.take_one_opencv_image(conv)
+#     actual_postition = axis.get_position(Units.LENGTH_MILLIMETRES)
+#     fom_here = fom(image)
+#     return actual_postition, fom_here
 
-def energy_laplacian(img):
-    img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    #print(np.shape(img_gray))
-    kernel = np.array([[-1, -4, -1],
-              [-4, 20, -4],
-              [-1, -4, -1]])
-    img_sobel = cv2.filter2D(img_gray, cv2.CV_16U, kernel)
-    #print(np.shape(img_sobel))
-    return np.mean(np.square(img_sobel))
+# def energy_laplacian(img):
+#     img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+#     #print(np.shape(img_gray))
+#     kernel = np.array([[-1, -4, -1],
+#               [-4, 20, -4],
+#               [-1, -4, -1]])
+#     img_sobel = cv2.filter2D(img_gray, cv2.CV_16U, kernel)
+#     #print(np.shape(img_sobel))
+#     return np.mean(np.square(img_sobel))
 
-def brenner(img):
-    img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    #print(np.shape(img_gray))
-    kernel = np.array([-1, 0, 1])
-    img_sobel = cv2.filter2D(img_gray, cv2.CV_16U, kernel)
-    #print(np.shape(img_sobel))
-    return np.sum(np.square(img_sobel))
+# def brenner(img):
+#     img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+#     #print(np.shape(img_gray))
+#     kernel = np.array([-1, 0, 1])
+#     img_sobel = cv2.filter2D(img_gray, cv2.CV_16U, kernel)
+#     #print(np.shape(img_sobel))
+#     return np.sum(np.square(img_sobel))
 
-def normed_variance(img):
-    img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
-    #mean, std = cv2.meanStdDev(img_gray)
-    #mean, std = np.squeeze(mean), np.squeeze(std)
-    return np.var(img_gray)/np.mean(img_gray)
-    #return std*std/mean
+# def normed_variance(img):
+#     img_gray = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
+#     #mean, std = cv2.meanStdDev(img_gray)
+#     #mean, std = np.squeeze(mean), np.squeeze(std)
+#     return np.var(img_gray)/np.mean(img_gray)
+#     #return std*std/mean
     
     
 def FOM_profile(camera, conv, axis, fom, start, end, stepsize):
@@ -58,7 +58,7 @@ def FOM_profile(camera, conv, axis, fom, start, end, stepsize):
     positions = list()
     p = np.arange(start, end, stepsize)
     for i in p:
-        position, fom_here = calculation(camera, conv, fom, i, axis)
+        position, fom_here = calculation(camera, conv, fom, i, axis, striped_focus=True)
         foms.append(fom_here)
         positions.append(position)
     return positions, foms
